@@ -42,6 +42,12 @@ struct ExploreView: View {
                             .fill(Color.black)
                             .frame(width: 4, height: 4)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                            activeInstrumentID = instrument.id
+                        }
+                    }
                     .position(x: point.x, y: point.y)
                     .scaleEffect(showMapIntro ? 1 : 0.88)
                     .opacity(showMapIntro ? 1 : 0)
@@ -90,6 +96,18 @@ struct ExploreView: View {
                             .delay(Double(instrument.id.hashValue.magnitude % 6) * 0.05),
                         value: showMapIntro
                     )
+                }
+
+                if activeInstrument != nil {
+                    Color.black.opacity(0.001)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                                activeInstrumentID = nil
+                            }
+                        }
+                        .transition(.opacity)
                 }
 
                 if let active = activeInstrument {

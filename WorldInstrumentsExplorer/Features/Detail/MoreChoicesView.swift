@@ -4,7 +4,7 @@ struct MoreChoicesView: View {
     let instrument: Instrument
     @State private var showTitle = false
     @State private var showClassicButton = false
-    @State private var showDIYButton = false
+    @State private var showPartsPerformanceButton = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -71,21 +71,21 @@ struct MoreChoicesView: View {
                             .animation(.easeOut(duration: 0.32), value: showClassicButton)
 
                             NavigationLink {
-                                DIYUploadView(instrument: instrument)
+                                PartsAndPerformanceView(instrument: instrument)
                             } label: {
                                 BrushTextButtonLabel(
-                                    text: "DIY",
-                                    systemIcon: "envelope.open",
+                                    text: "Parts & Performance",
+                                    systemIcon: "person.fill",
                                     accent: Color(red: 0.46, green: 0.19, blue: 0.12)
                                 )
                             }
                             .buttonStyle(ChoicePressFeedbackStyle())
-                            .accessibilityLabel("DIY")
-                            .accessibilityHint("Upload your own sheet music file.")
-                            .scaleEffect(showDIYButton ? 1 : 0.97)
-                            .opacity(showDIYButton ? 1 : 0)
-                            .offset(y: showDIYButton ? 0 : 10)
-                            .animation(.easeOut(duration: 0.32), value: showDIYButton)
+                            .accessibilityLabel("Parts and Performance")
+                            .accessibilityHint("View instrument parts and playing posture examples.")
+                            .scaleEffect(showPartsPerformanceButton ? 1 : 0.97)
+                            .opacity(showPartsPerformanceButton ? 1 : 0)
+                            .offset(y: showPartsPerformanceButton ? 0 : 10)
+                            .animation(.easeOut(duration: 0.32), value: showPartsPerformanceButton)
                         }
                         .padding(.top, compactLayout ? 10 : 16)
                     }
@@ -105,13 +105,13 @@ struct MoreChoicesView: View {
         .onAppear {
             showTitle = false
             showClassicButton = false
-            showDIYButton = false
+            showPartsPerformanceButton = false
             showTitle = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 showClassicButton = true
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
-                showDIYButton = true
+                showPartsPerformanceButton = true
             }
         }
     }

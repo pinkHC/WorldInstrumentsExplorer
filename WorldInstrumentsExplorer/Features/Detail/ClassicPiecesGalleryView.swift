@@ -49,6 +49,12 @@ struct ClassicPiecesGalleryView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
                     }
+
+                    Text("Thank you for using INSTRUMENT ATLAS!")
+                        .font(.custom("Palatino-Italic", size: 18))
+                        .foregroundStyle(Color.black.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
