@@ -1,4 +1,6 @@
 import SwiftUI
+import AVFAudio
+import Combine
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -9,6 +11,7 @@ struct ClassicPiecesGalleryView: View {
     let instrument: Instrument
 
     @State private var visibleCardCount = 0
+    @StateObject private var audioController = PieceAudioController()
     private let cardWidth: CGFloat = 230
     private let cardSpacing: CGFloat = 18
 
@@ -29,9 +32,15 @@ struct ClassicPiecesGalleryView: View {
 
                             HStack(alignment: .top, spacing: cardSpacing) {
                                 ForEach(row, id: \.piece.id) { item in
+                                    let playable = isPlayable(item.piece)
                                     HangingPieceCard(
                                         piece: item.piece,
-                                        isPlayable: isPlayable(item.piece),
+                                        isPlayable: playable,
+                                        isPlaying: audioController.playingPieceID == item.piece.id,
+                                        onTap: {
+                                            guard playable else { return }
+                                            audioController.togglePlayback(for: item.piece)
+                                        },
                                         tiltAngle: cardTilt(index: item.index)
                                     )
                                     .frame(width: cardWidth)
@@ -76,6 +85,9 @@ struct ClassicPiecesGalleryView: View {
                 }
             }
         }
+        .onDisappear {
+            audioController.stop()
+        }
     }
 
     private struct IndexedPiece {
@@ -109,13 +121,7 @@ struct ClassicPiecesGalleryView: View {
     }
 
     private func isPlayable(_ piece: ClassicPiece) -> Bool {
-        guard piece.audioFile.lowercased().hasSuffix(".mp3") else {
-            return false
-        }
-        let filename = piece.audioFile as NSString
-        let resource = filename.deletingPathExtension
-        let ext = filename.pathExtension
-        return Bundle.main.url(forResource: resource, withExtension: ext) != nil
+        AudioResourceLocator.url(for: piece.audioFile) != nil
     }
 }
 
@@ -198,38 +204,135 @@ private struct HangingStringView: View {
 private struct HangingPieceCard: View {
     let piece: ClassicPiece
     let isPlayable: Bool
+    let isPlaying: Bool
+    let onTap: () -> Void
     let tiltAngle: Double
 
     var body: some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(Color.black.opacity(0.55))
-                .frame(width: 2, height: 22)
+        Button(action: onTap) {
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.black.opacity(0.55))
+                    .frame(width: 2, height: 22)
 
-            VStack(spacing: 10) {
-                PiecePhotoArtwork(pieceID: piece.id, useGrayscale: !isPlayable)
-                    .frame(height: 130)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                VStack(spacing: 10) {
+                    PiecePhotoArtwork(pieceID: piece.id, useGrayscale: !isPlayable)
+                        .frame(height: 130)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                Text(piece.title)
-                    .font(.custom("Times New Roman", size: 22))
-                    .foregroundStyle(Color.black.opacity(0.88))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity)
+                    Text(piece.title)
+                        .font(.custom("Times New Roman", size: 22))
+                        .foregroundStyle(Color.black.opacity(0.88))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity)
+
+                    Image(systemName: playbackIcon)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(playbackColor)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.white.opacity(0.95))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.black.opacity(0.22), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.14), radius: 4, x: 0, y: 3)
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.95))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.black.opacity(0.22), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.14), radius: 4, x: 0, y: 3)
         }
+        .buttonStyle(.plain)
+        .disabled(!isPlayable)
         .rotationEffect(.degrees(tiltAngle))
+    }
+
+    private var playbackIcon: String {
+        guard isPlayable else { return "speaker.slash.fill" }
+        return isPlaying ? "pause.circle.fill" : "play.circle.fill"
+    }
+
+    private var playbackColor: Color {
+        if !isPlayable {
+            return Color.gray.opacity(0.8)
+        }
+        return isPlaying ? Color(red: 0.74, green: 0.20, blue: 0.14) : Color(red: 0.14, green: 0.30, blue: 0.60)
+    }
+}
+
+private enum AudioResourceLocator {
+    private static let supportedExtensions: Set<String> = ["mp3", "m4a", "wav", "aac", "aif", "aiff", "caf"]
+
+    static func url(for audioFile: String) -> URL? {
+        let filename = audioFile as NSString
+        let ext = filename.pathExtension.lowercased()
+        guard supportedExtensions.contains(ext) else { return nil }
+
+        if audioFile.contains("/") {
+            let path = audioFile as NSString
+            let subdirectory = path.deletingLastPathComponent
+            let resource = (path.lastPathComponent as NSString).deletingPathExtension
+            if let nestedURL = Bundle.main.url(
+                forResource: resource,
+                withExtension: ext,
+                subdirectory: subdirectory == "." ? nil : subdirectory
+            ) {
+                return nestedURL
+            }
+        }
+
+        let resource = filename.deletingPathExtension
+        let candidateSubdirectories: [String?] = [nil, "audio", "Audio", "context/audio", "Resources/Audio"]
+        for subdirectory in candidateSubdirectories {
+            if let bundledURL = Bundle.main.url(forResource: resource, withExtension: ext, subdirectory: subdirectory) {
+                return bundledURL
+            }
+        }
+
+        return nil
+    }
+}
+
+private final class PieceAudioController: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    @Published private(set) var playingPieceID: String?
+    private var player: AVAudioPlayer?
+
+    func togglePlayback(for piece: ClassicPiece) {
+        guard let url = AudioResourceLocator.url(for: piece.audioFile) else {
+            stop()
+            return
+        }
+
+        if playingPieceID == piece.id, player?.isPlaying == true {
+            stop()
+            return
+        }
+
+        play(url: url, pieceID: piece.id)
+    }
+
+    func stop() {
+        player?.stop()
+        player = nil
+        playingPieceID = nil
+    }
+
+    private func play(url: URL, pieceID: String) {
+        do {
+            let newPlayer = try AVAudioPlayer(contentsOf: url)
+            newPlayer.delegate = self
+            newPlayer.prepareToPlay()
+            newPlayer.play()
+            player = newPlayer
+            playingPieceID = pieceID
+        } catch {
+            stop()
+        }
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        stop()
     }
 }
 
