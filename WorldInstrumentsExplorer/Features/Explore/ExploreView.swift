@@ -179,6 +179,8 @@ struct ExploreView: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Back")
+        .accessibilityHint("Return to the main menu.")
         .padding(.leading, 16)
         .padding(.top, 8)
     }

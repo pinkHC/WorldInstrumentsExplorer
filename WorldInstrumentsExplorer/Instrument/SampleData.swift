@@ -17,35 +17,35 @@ enum SampleData {
                     title: "Guangling San",
                     performer: "Traditional",
                     audioFile: "guqin_guanglingsan.mp3",
-                    durationSec: 320
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "guqin-flowingwater",
                     title: "Flowing Water",
                     performer: "Traditional",
                     audioFile: "guqin_flowingwater.mp3",
-                    durationSec: 280
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "guqin-yangguansandie",
                     title: "Yangguan Sandie",
                     performer: "Traditional",
                     audioFile: "guqin_yangguansandie.mp3",
-                    durationSec: 300
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "guqin-meihuasannong",
                     title: "Meihua Sannong",
                     performer: "Traditional",
                     audioFile: "guqin_meihuasannong.mp3",
-                    durationSec: 310
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "guqin-pingshaluoyan",
                     title: "Pingsha Luoyan",
                     performer: "Traditional",
                     audioFile: "guqin_pingshaluoyan.mp3",
-                    durationSec: 290
+                    durationSec: 11
                 )
             ],
             synthesisProfile: SynthesisProfile(
@@ -69,35 +69,35 @@ enum SampleData {
                     title: "Ambush from Ten Sides",
                     performer: "Traditional",
                     audioFile: "pipa_ambush.mp3",
-                    durationSec: 360
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "pipa-danceyi",
                     title: "Dance of the Yi People",
                     performer: "Traditional",
                     audioFile: "pipa_danceyi.mp3",
-                    durationSec: 330
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "pipa-springmoonriver",
                     title: "Spring Flowers on Moonlit River",
                     performer: "Traditional",
                     audioFile: "pipa_springmoonriver.mp3",
-                    durationSec: 340
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "pipa-kingarmor",
                     title: "The King Doffs His Armor",
                     performer: "Traditional",
                     audioFile: "pipa_kingarmor.mp3",
-                    durationSec: 350
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "pipa-silkroaddance",
                     title: "Dance along the Old Silk Road",
                     performer: "Traditional",
                     audioFile: "pipa_silkroaddance.mp3",
-                    durationSec: 320
+                    durationSec: 11
                 )
             ],
             synthesisProfile: SynthesisProfile(
@@ -121,35 +121,35 @@ enum SampleData {
                     title: "Rokudan no Shirabe",
                     performer: "Traditional",
                     audioFile: "koto_rokudan.mp3",
-                    durationSec: 300
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "koto-midare",
                     title: "Midare",
                     performer: "Traditional",
                     audioFile: "koto_midare.mp3",
-                    durationSec: 295
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "koto-hachidan",
                     title: "Hachidan no Shirabe",
                     performer: "Traditional",
                     audioFile: "koto_hachidan.mp3",
-                    durationSec: 305
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "koto-chidori",
                     title: "Chidori no Kyoku",
                     performer: "Traditional",
                     audioFile: "koto_chidori.mp3",
-                    durationSec: 285
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "koto-harunoumi",
                     title: "Haru no Umi",
                     performer: "Traditional",
                     audioFile: "koto_harunoumi.mp3",
-                    durationSec: 315
+                    durationSec: 11
                 )
             ],
             synthesisProfile: SynthesisProfile(
@@ -173,35 +173,35 @@ enum SampleData {
                     title: "Longa Riyad",
                     performer: "Traditional",
                     audioFile: "oud_longariyad.mp3",
-                    durationSec: 240
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "oud-samaibayati",
                     title: "Sama'i Bayati",
                     performer: "Traditional",
                     audioFile: "oud_samaibayati.mp3",
-                    durationSec: 260
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "oud-samainahawand",
                     title: "Sama'i Nahawand",
                     performer: "Traditional",
                     audioFile: "oud_samainahawand.mp3",
-                    durationSec: 255
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "oud-taqsimbayati",
                     title: "Taqsim Bayati",
                     performer: "Traditional",
                     audioFile: "oud_taqsimbayati.mp3",
-                    durationSec: 230
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "oud-lammabada",
                     title: "Lamma Bada Yatathanna",
                     performer: "Traditional",
                     audioFile: "oud_lammabada.mp3",
-                    durationSec: 275
+                    durationSec: 11
                 )
             ],
             synthesisProfile: SynthesisProfile(
@@ -225,21 +225,21 @@ enum SampleData {
                     title: "Kaira",
                     performer: "Traditional",
                     audioFile: "kora_kaira.mp3",
-                    durationSec: 260
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "kora-jarabi",
                     title: "Jarabi",
                     performer: "Traditional",
                     audioFile: "kora_jarabi.mp3",
-                    durationSec: 250
+                    durationSec: 11
                 ),
                 ClassicPiece(
                     id: "kora-allalaake",
                     title: "Alla L'aa Ke",
                     performer: "Traditional",
                     audioFile: "kora_allalaake.mp3",
-                    durationSec: 245
+                    durationSec: 11
                 )
             ],
             synthesisProfile: SynthesisProfile(

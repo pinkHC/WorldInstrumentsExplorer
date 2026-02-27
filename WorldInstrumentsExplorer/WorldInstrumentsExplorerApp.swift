@@ -12,6 +12,7 @@ struct WorldInstrumentsExplorerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .dynamicTypeSize(.xSmall ... .large)
         }
         #if os(macOS)
         .defaultSize(width: 1280, height: 820)

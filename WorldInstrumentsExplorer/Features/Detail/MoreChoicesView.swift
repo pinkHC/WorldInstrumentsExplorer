@@ -184,6 +184,8 @@ struct MoreChoicesView: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Back")
+        .accessibilityHint("Return to the previous screen.")
         .padding(.leading, 16)
         .padding(.top, 8)
     }

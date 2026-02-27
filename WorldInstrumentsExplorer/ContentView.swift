@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct ContentView: View {
     private let instruments = SampleData.instruments
@@ -21,11 +24,17 @@ struct ContentView: View {
                 let fullLayout = size.width >= 1200 && size.height >= 820
                 let scale = fullLayout ? 1.0 : min(size.width / 1200, size.height / 820)
                 let clampedScale = max(0.72, min(1.0, scale))
+                #if os(iOS)
+                let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+                #else
+                let isPhone = false
+                #endif
                 let titleSize = 72 * clampedScale
                 let buttonFontSize = 44 * clampedScale
                 let buttonMaxWidth = 300 * clampedScale
                 let buttonHeight = 84 * clampedScale
-                let verticalOffset = fullLayout ? -180.0 : -180.0 * clampedScale
+                let verticalOffset = isPhone ? -60.0 : (fullLayout ? -180.0 : -180.0 * clampedScale)
+                let bottomPadding = isPhone ? 32.0 : 32.0 * clampedScale
 
                 ZStack {
                     Color.white
@@ -58,6 +67,7 @@ struct ContentView: View {
                             .opacity(showLandingTitle ? 1 : 0)
                             .offset(y: showLandingTitle ? 0 : 18)
                             .animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: showLandingTitle)
+                            .accessibilityAddTraits(.isHeader)
 
                         NavigationLink {
                             ExploreView()
@@ -102,7 +112,7 @@ struct ContentView: View {
                         .animation(reduceMotion ? nil : .easeOut(duration: 0.38).delay(0.06), value: showLandingActions)
                     }
                     .padding(.horizontal, 24 * clampedScale)
-                    .padding(.bottom, 32 * clampedScale)
+                    .padding(.bottom, bottomPadding)
                     .offset(y: verticalOffset)
                 }
             }
