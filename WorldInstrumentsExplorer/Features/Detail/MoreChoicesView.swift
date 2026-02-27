@@ -1,106 +1,74 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct MoreChoicesView: View {
     let instrument: Instrument
     @State private var showTitle = false
     @State private var showClassicButton = false
     @State private var showPartsPerformanceButton = false
+    @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    #else
+    private let isPhone = false
+    #endif
 
     var body: some View {
         GeometryReader { proxy in
             let viewportHeight = proxy.size.height
             let compactLayout = viewportHeight < 690
-            let topPadding = max(6, min(24, viewportHeight * 0.03))
+            let topPadding = isPhone ? 0 : max(6, min(24, viewportHeight * 0.03))
             let sidePadding = max(16, min(30, viewportHeight * 0.035))
             let buttonSpacing: CGFloat = compactLayout ? 14 : 18
             let clusterSpacing: CGFloat = compactLayout ? 24 : 34
-            let clusterYOffset: CGFloat = compactLayout ? -8 : -2
+            let clusterYOffset: CGFloat = isPhone ? 0 : (compactLayout ? -8 : -2)
 
             ZStack {
                 RicePaperBackground()
                     .ignoresSafeArea()
 
-                VStack(spacing: 18) {
-                    Spacer(minLength: compactLayout ? 20 : 28)
-
-                    VStack(spacing: clusterSpacing) {
-                        StoneTitleLabel(
-                            text: "\(instrument.nameEnglish) - More Choices",
-                            compactLayout: compactLayout
-                        )
-                        .padding(.top, topPadding)
-                        .scaleEffect(showTitle ? 1 : 0.96)
-                        .opacity(showTitle ? 1 : 0)
-                        .animation(.easeOut(duration: 0.35), value: showTitle)
-
-                        Text("More functions will be available here soon.")
-                            .font(.custom("Marker Felt", size: compactLayout ? 28 : 34))
-                            .tracking(compactLayout ? 0.4 : 0.8)
-                            .foregroundStyle(Color(red: 0.16, green: 0.16, blue: 0.15).opacity(0.92))
-                            .overlay(
-                                Text("More functions will be available here soon.")
-                                    .font(.custom("Marker Felt", size: compactLayout ? 28 : 34))
-                                    .tracking(compactLayout ? 0.4 : 0.8)
-                                    .foregroundStyle(Color.black.opacity(0.22))
-                                    .offset(x: 0.7, y: 0.8)
-                                    .blur(radius: 0.35)
+                Group {
+                    if isPhone {
+                        ScrollView {
+                            contentStack(
+                                compactLayout: compactLayout,
+                                topPadding: topPadding,
+                                buttonSpacing: buttonSpacing,
+                                clusterSpacing: clusterSpacing,
+                                clusterYOffset: clusterYOffset
                             )
-                            .shadow(color: Color.black.opacity(0.25), radius: 0.6, x: 0.4, y: 0.8)
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(compactLayout ? 4 : 6)
-                            .padding(.horizontal, compactLayout ? 22 : 30)
-                            .opacity(showTitle ? 1 : 0)
-                            .animation(.easeOut(duration: 0.32).delay(0.06), value: showTitle)
-
-                        VStack(spacing: buttonSpacing) {
-                            NavigationLink {
-                                ClassicPiecesGalleryView(instrument: instrument)
-                            } label: {
-                                BrushTextButtonLabel(
-                                    text: "Classic Pieces",
-                                    systemIcon: "music.note",
-                                    accent: Color(red: 0.40, green: 0.28, blue: 0.13)
-                                )
-                            }
-                            .buttonStyle(ChoicePressFeedbackStyle())
-                            .accessibilityLabel("Classic Pieces")
-                            .accessibilityHint("Browse classic works for this instrument.")
-                            .scaleEffect(showClassicButton ? 1 : 0.97)
-                            .opacity(showClassicButton ? 1 : 0)
-                            .offset(y: showClassicButton ? 0 : 10)
-                            .animation(.easeOut(duration: 0.32), value: showClassicButton)
-
-                            NavigationLink {
-                                PartsAndPerformanceView(instrument: instrument)
-                            } label: {
-                                BrushTextButtonLabel(
-                                    text: "Parts & Performance",
-                                    systemIcon: "person.fill",
-                                    accent: Color(red: 0.46, green: 0.19, blue: 0.12)
-                                )
-                            }
-                            .buttonStyle(ChoicePressFeedbackStyle())
-                            .accessibilityLabel("Parts and Performance")
-                            .accessibilityHint("View instrument parts and playing posture examples.")
-                            .scaleEffect(showPartsPerformanceButton ? 1 : 0.97)
-                            .opacity(showPartsPerformanceButton ? 1 : 0)
-                            .offset(y: showPartsPerformanceButton ? 0 : 10)
-                            .animation(.easeOut(duration: 0.32), value: showPartsPerformanceButton)
+                            .padding(.vertical, 0)
                         }
-                        .padding(.top, compactLayout ? 10 : 16)
+                        .contentMargins(.vertical, 0, for: .scrollContent)
+                        .contentMargins(.vertical, 0, for: .scrollIndicators)
+                    } else {
+                        contentStack(
+                            compactLayout: compactLayout,
+                            topPadding: topPadding,
+                            buttonSpacing: buttonSpacing,
+                            clusterSpacing: clusterSpacing,
+                            clusterYOffset: clusterYOffset
+                        )
                     }
-                    .frame(maxWidth: 760)
-                    .offset(y: clusterYOffset)
-
-                    Spacer(minLength: compactLayout ? 20 : 32)
                 }
                 .padding(.horizontal, sidePadding)
-                .padding(.bottom, compactLayout ? 26 : 40)
+                .padding(.bottom, isPhone ? 0 : (compactLayout ? 26 : 40))
             }
         }
         .navigationTitle("More Choices")
+        .overlay(alignment: .topLeading) {
+            if isPhone {
+                floatingBackButton
+            }
+        }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isPhone ? .hidden : .visible, for: .navigationBar)
+        .toolbarBackground(.white, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
         #endif
         .onAppear {
             showTitle = false
@@ -114,6 +82,110 @@ struct MoreChoicesView: View {
                 showPartsPerformanceButton = true
             }
         }
+    }
+
+    @ViewBuilder
+    private func contentStack(
+        compactLayout: Bool,
+        topPadding: CGFloat,
+        buttonSpacing: CGFloat,
+        clusterSpacing: CGFloat,
+        clusterYOffset: CGFloat
+    ) -> some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: isPhone ? 0 : (compactLayout ? 20 : 28))
+
+            VStack(spacing: clusterSpacing) {
+                StoneTitleLabel(
+                    text: "\(instrument.nameEnglish) - More Choices",
+                    compactLayout: compactLayout
+                )
+                .padding(.top, topPadding)
+                .scaleEffect(showTitle ? 1 : 0.96)
+                .opacity(showTitle ? 1 : 0)
+                .animation(.easeOut(duration: 0.35), value: showTitle)
+
+                Text("More functions will be available here soon.")
+                    .font(.custom("Marker Felt", size: compactLayout ? 28 : 34))
+                    .tracking(compactLayout ? 0.4 : 0.8)
+                    .foregroundStyle(Color(red: 0.16, green: 0.16, blue: 0.15).opacity(0.92))
+                    .overlay(
+                        Text("More functions will be available here soon.")
+                            .font(.custom("Marker Felt", size: compactLayout ? 28 : 34))
+                            .tracking(compactLayout ? 0.4 : 0.8)
+                            .foregroundStyle(Color.black.opacity(0.22))
+                            .offset(x: 0.7, y: 0.8)
+                            .blur(radius: 0.35)
+                    )
+                    .shadow(color: Color.black.opacity(0.25), radius: 0.6, x: 0.4, y: 0.8)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(compactLayout ? 4 : 6)
+                    .padding(.horizontal, compactLayout ? 22 : 30)
+                    .opacity(showTitle ? 1 : 0)
+                    .animation(.easeOut(duration: 0.32).delay(0.06), value: showTitle)
+
+                VStack(spacing: buttonSpacing) {
+                    NavigationLink {
+                        ClassicPiecesGalleryView(instrument: instrument)
+                    } label: {
+                        BrushTextButtonLabel(
+                            text: "Classic Pieces",
+                            systemIcon: "music.note",
+                            accent: Color(red: 0.40, green: 0.28, blue: 0.13)
+                        )
+                    }
+                    .buttonStyle(ChoicePressFeedbackStyle())
+                    .accessibilityLabel("Classic Pieces")
+                    .accessibilityHint("Browse classic works for this instrument.")
+                    .scaleEffect(showClassicButton ? 1 : 0.97)
+                    .opacity(showClassicButton ? 1 : 0)
+                    .offset(y: showClassicButton ? 0 : 10)
+                    .animation(.easeOut(duration: 0.32), value: showClassicButton)
+
+                    NavigationLink {
+                        PartsAndPerformanceView(instrument: instrument)
+                    } label: {
+                        BrushTextButtonLabel(
+                            text: "Parts & Performance",
+                            systemIcon: "person.fill",
+                            accent: Color(red: 0.46, green: 0.19, blue: 0.12)
+                        )
+                    }
+                    .buttonStyle(ChoicePressFeedbackStyle())
+                    .accessibilityLabel("Parts and Performance")
+                    .accessibilityHint("View instrument parts and playing posture examples.")
+                    .scaleEffect(showPartsPerformanceButton ? 1 : 0.97)
+                    .opacity(showPartsPerformanceButton ? 1 : 0)
+                    .offset(y: showPartsPerformanceButton ? 0 : 10)
+                    .animation(.easeOut(duration: 0.32), value: showPartsPerformanceButton)
+                }
+                .padding(.top, compactLayout ? 10 : 16)
+            }
+            .frame(maxWidth: 760)
+            .offset(y: clusterYOffset)
+
+            Spacer(minLength: isPhone ? 0 : (compactLayout ? 20 : 32))
+        }
+    }
+
+    @ViewBuilder
+    private var floatingBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.88))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.black.opacity(0.14), lineWidth: 0.8)
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 16)
+        .padding(.top, 8)
     }
 }
 

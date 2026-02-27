@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct ExploreView: View {
     private struct VerseEntry {
@@ -8,8 +11,15 @@ struct ExploreView: View {
 
     private let instruments = SampleData.instruments
     private let mapAspectRatio: CGFloat = 4977.0 / 2515.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dismiss) private var dismiss
     @State private var activeInstrumentID: String?
     @State private var showMapIntro = false
+    #if os(iOS)
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    #else
+    private let isPhone = false
+    #endif
 
     var body: some View {
         GeometryReader { proxy in
@@ -23,6 +33,7 @@ struct ExploreView: View {
                     .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
+                    .accessibilityHidden(true)
                     .scaleEffect(showMapIntro ? 1 : 1.02)
                     .opacity(showMapIntro ? 1 : 0.95)
 
@@ -42,17 +53,12 @@ struct ExploreView: View {
                             .fill(Color.black)
                             .frame(width: 4, height: 4)
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
-                            activeInstrumentID = instrument.id
-                        }
-                    }
+                    .accessibilityHidden(true)
                     .position(x: point.x, y: point.y)
                     .scaleEffect(showMapIntro ? 1 : 0.88)
                     .opacity(showMapIntro ? 1 : 0)
                     .animation(
-                        .easeOut(duration: 0.3)
+                        reduceMotion ? nil : .easeOut(duration: 0.3)
                             .delay(Double(instrument.id.hashValue.magnitude % 5) * 0.04),
                         value: showMapIntro
                     )
@@ -66,6 +72,7 @@ struct ExploreView: View {
                             .font(.custom("Marker Felt", size: 18))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
+                            .frame(minWidth: 44, minHeight: 44)
                             .foregroundStyle(.black.opacity(0.9))
                         .background(
                             LinearGradient(
@@ -85,6 +92,9 @@ struct ExploreView: View {
                         .shadow(color: .black.opacity(0.22), radius: 2, x: 0, y: 2)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Select \(instrument.nameEnglish)")
+                    .accessibilityHint("Open details and options for this instrument.")
+                    .accessibilityValue(activeInstrumentID == instrument.id ? "Selected" : "Not selected")
                     .position(
                         x: tagCenter.x,
                         y: tagCenter.y
@@ -92,7 +102,7 @@ struct ExploreView: View {
                     .scaleEffect(showMapIntro ? 1 : 0.9)
                     .opacity(showMapIntro ? 1 : 0)
                     .animation(
-                        .easeOut(duration: 0.36)
+                        reduceMotion ? nil : .easeOut(duration: 0.36)
                             .delay(Double(instrument.id.hashValue.magnitude % 6) * 0.05),
                         value: showMapIntro
                     )
@@ -102,9 +112,14 @@ struct ExploreView: View {
                     Color.black.opacity(0.001)
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
+                        .accessibilityHidden(true)
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            if reduceMotion {
                                 activeInstrumentID = nil
+                            } else {
+                                withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                                    activeInstrumentID = nil
+                                }
                             }
                         }
                         .transition(.opacity)
@@ -126,13 +141,46 @@ struct ExploreView: View {
             }
         }
         .ignoresSafeArea()
-        .animation(.spring(response: 0.44, dampingFraction: 0.8), value: activeInstrumentID)
-        .onAppear {
-            showMapIntro = false
-            withAnimation(.easeOut(duration: 0.38)) {
-                showMapIntro = true
+        .overlay(alignment: .topLeading) {
+            if isPhone {
+                floatingBackButton
             }
         }
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isPhone ? .hidden : .visible, for: .navigationBar)
+        #endif
+        .animation(reduceMotion ? nil : .spring(response: 0.44, dampingFraction: 0.8), value: activeInstrumentID)
+        .onAppear {
+            showMapIntro = false
+            if reduceMotion {
+                showMapIntro = true
+            } else {
+                withAnimation(.easeOut(duration: 0.38)) {
+                    showMapIntro = true
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var floatingBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.88))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.black.opacity(0.14), lineWidth: 0.8)
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 16)
+        .padding(.top, 8)
     }
 
     private func fittedMapFrame(in container: CGSize) -> CGRect {
@@ -201,8 +249,12 @@ struct ExploreView: View {
                 woodNameplate(text: instrument.nameEnglish)
                 Spacer()
                 Button {
-                    withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                    if reduceMotion {
                         activeInstrumentID = nil
+                    } else {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            activeInstrumentID = nil
+                        }
                     }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -210,6 +262,8 @@ struct ExploreView: View {
                         .foregroundStyle(.black.opacity(0.45))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close details")
+                .accessibilityHint("Dismiss the instrument details panel.")
             }
 
             bambooSlip(
@@ -261,6 +315,8 @@ struct ExploreView: View {
                 .shadow(color: .black.opacity(0.24), radius: 5, x: 0, y: 3)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("More choices")
+            .accessibilityHint("Open classic pieces and parts or performance pages.")
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(18)

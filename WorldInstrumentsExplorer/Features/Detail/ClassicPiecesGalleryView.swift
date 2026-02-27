@@ -10,10 +10,17 @@ import AppKit
 struct ClassicPiecesGalleryView: View {
     let instrument: Instrument
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dismiss) private var dismiss
     @State private var visibleCardCount = 0
     @StateObject private var audioController = PieceAudioController()
     private let cardWidth: CGFloat = 230
     private let cardSpacing: CGFloat = 18
+    #if os(iOS)
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    #else
+    private let isPhone = false
+    #endif
 
     var body: some View {
         GeometryReader { geo in
@@ -29,6 +36,7 @@ struct ClassicPiecesGalleryView: View {
                             HangingStringView()
                                 .frame(height: 54)
                                 .frame(width: rowWidth + 10)
+                                .accessibilityHidden(true)
 
                             HStack(alignment: .top, spacing: cardSpacing) {
                                 ForEach(row, id: \.piece.id) { item in
@@ -48,7 +56,7 @@ struct ClassicPiecesGalleryView: View {
                                     .opacity(item.index < visibleCardCount ? 1 : 0)
                                     .offset(y: item.index < visibleCardCount ? 0 : 14)
                                     .animation(
-                                        .spring(response: 0.42, dampingFraction: 0.72)
+                                        reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.72)
                                             .delay(Double(item.index) * 0.08),
                                         value: visibleCardCount
                                     )
@@ -63,30 +71,55 @@ struct ClassicPiecesGalleryView: View {
                         .font(.custom("Palatino-Italic", size: 18))
                         .foregroundStyle(Color.black.opacity(0.72))
                         .multilineTextAlignment(.center)
-                        .padding(.top, 8)
+                        .padding(.top, isPhone ? 0 : 8)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 20)
-                .padding(.bottom, 24)
+                .padding(.top, isPhone ? 0 : 20)
+                .padding(.bottom, isPhone ? 0 : 24)
+            }
+            #if os(iOS)
+            .contentMargins(.vertical, isPhone ? 0 : nil, for: .scrollContent)
+            .contentMargins(.vertical, isPhone ? 0 : nil, for: .scrollIndicators)
+            #endif
+        }
+        .safeAreaPadding(.top, isPhone ? 0 : 8)
+        .safeAreaPadding(.bottom, isPhone ? 0 : 8)
+        .background(OldPaperGalleryBackground().ignoresSafeArea().accessibilityHidden(true))
+        .accessibilityElement(children: .contain)
+        .navigationTitle("Classic Pieces")
+        .overlay(alignment: .topLeading) {
+            if isPhone {
+                floatingBackButton
             }
         }
-        .safeAreaPadding(.top, 8)
-        .safeAreaPadding(.bottom, 8)
-        .background(OldPaperGalleryBackground())
-        .navigationTitle("Classic Pieces")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isPhone ? .hidden : .visible, for: .navigationBar)
+        .toolbarBackground(.white, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
+        #elseif os(macOS)
+        .toolbarBackground(.white, for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
+        .toolbarColorScheme(.light, for: .windowToolbar)
         #endif
         .onAppear {
             visibleCardCount = 0
-            for index in instrument.classicPieces.indices {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1) {
-                    visibleCardCount = max(visibleCardCount, index + 1)
+            if reduceMotion {
+                visibleCardCount = instrument.classicPieces.count
+            } else {
+                for index in instrument.classicPieces.indices {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1) {
+                        visibleCardCount = max(visibleCardCount, index + 1)
+                    }
                 }
             }
         }
         .onDisappear {
             audioController.stop()
+        }
+        .onChange(of: audioController.playingPieceID) { _, playingPieceID in
+            announcePlaybackChange(for: playingPieceID)
         }
     }
 
@@ -122,6 +155,38 @@ struct ClassicPiecesGalleryView: View {
 
     private func isPlayable(_ piece: ClassicPiece) -> Bool {
         AudioResourceLocator.url(for: piece.audioFile) != nil
+    }
+
+    private func announcePlaybackChange(for playingPieceID: String?) {
+        #if os(iOS)
+        let message: String
+        if let playingPieceID, let piece = instrument.classicPieces.first(where: { $0.id == playingPieceID }) {
+            message = "Now playing \(piece.title)"
+        } else {
+            message = "Playback stopped"
+        }
+        UIAccessibility.post(notification: .announcement, argument: message)
+        #endif
+    }
+
+    @ViewBuilder
+    private var floatingBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.88))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.black.opacity(0.14), lineWidth: 0.8)
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 16)
+        .padding(.top, 8)
     }
 }
 
@@ -219,6 +284,7 @@ private struct HangingPieceCard: View {
                     PiecePhotoArtwork(pieceID: piece.id, useGrayscale: !isPlayable)
                         .frame(height: 130)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .accessibilityHidden(true)
 
                     Text(piece.title)
                         .font(.custom("Times New Roman", size: 22))
@@ -230,6 +296,7 @@ private struct HangingPieceCard: View {
                     Image(systemName: playbackIcon)
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundStyle(playbackColor)
+                        .accessibilityHidden(true)
                 }
                 .padding(12)
                 .background(
@@ -246,6 +313,10 @@ private struct HangingPieceCard: View {
         .buttonStyle(.plain)
         .disabled(!isPlayable)
         .rotationEffect(.degrees(tiltAngle))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(piece.title)
+        .accessibilityHint(isPlayable ? "Double tap to play or pause this piece." : "Audio unavailable for this piece.")
+        .accessibilityValue(accessibilityPlaybackState)
     }
 
     private var playbackIcon: String {
@@ -258,6 +329,13 @@ private struct HangingPieceCard: View {
             return Color.gray.opacity(0.8)
         }
         return isPlaying ? Color(red: 0.74, green: 0.20, blue: 0.14) : Color(red: 0.14, green: 0.30, blue: 0.60)
+    }
+
+    private var accessibilityPlaybackState: String {
+        if !isPlayable {
+            return "Unavailable"
+        }
+        return isPlaying ? "Playing" : "Paused"
     }
 }
 

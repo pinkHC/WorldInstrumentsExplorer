@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     private let instruments = SampleData.instruments
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showLandingTitle = false
     @State private var showLandingActions = false
 
@@ -35,6 +36,7 @@ struct ContentView: View {
                         .scaledToFit()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .ignoresSafeArea()
+                        .accessibilityHidden(true)
                         .scaleEffect(showLandingTitle ? 1 : 1.03)
                         .opacity(showLandingTitle ? 1 : 0.94)
 
@@ -55,7 +57,7 @@ struct ContentView: View {
                             .scaleEffect(showLandingTitle ? 1 : 0.95)
                             .opacity(showLandingTitle ? 1 : 0)
                             .offset(y: showLandingTitle ? 0 : 18)
-                            .animation(.easeOut(duration: 0.45), value: showLandingTitle)
+                            .animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: showLandingTitle)
 
                         NavigationLink {
                             ExploreView()
@@ -64,17 +66,19 @@ struct ContentView: View {
                                 .font(.system(size: buttonFontSize, weight: .heavy, design: .rounded))
                                 .frame(maxWidth: buttonMaxWidth)
                                 .frame(height: buttonHeight)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.black)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color.green)
+                                        .fill(Color(red: 0.73, green: 0.92, blue: 0.73))
                                 )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Explore instruments")
+                        .accessibilityHint("Open the world map and select an instrument.")
                         .scaleEffect(showLandingActions ? 1 : 0.95)
                         .opacity(showLandingActions ? 1 : 0)
                         .offset(y: showLandingActions ? 0 : 14)
-                        .animation(.easeOut(duration: 0.38), value: showLandingActions)
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.38), value: showLandingActions)
 
                         NavigationLink {
                             QuizView(instruments: instruments)
@@ -86,14 +90,16 @@ struct ContentView: View {
                                 .foregroundStyle(.black)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color.yellow)
+                                        .fill(Color(red: 0.95, green: 0.86, blue: 0.55))
                                 )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Start quiz")
+                        .accessibilityHint("Answer questions about instruments.")
                         .scaleEffect(showLandingActions ? 1 : 0.95)
                         .opacity(showLandingActions ? 1 : 0)
                         .offset(y: showLandingActions ? 0 : 14)
-                        .animation(.easeOut(duration: 0.38).delay(0.06), value: showLandingActions)
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.38).delay(0.06), value: showLandingActions)
                     }
                     .padding(.horizontal, 24 * clampedScale)
                     .padding(.bottom, 32 * clampedScale)
@@ -105,9 +111,14 @@ struct ContentView: View {
         .onAppear {
             showLandingTitle = false
             showLandingActions = false
-            showLandingTitle = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
+            if reduceMotion {
+                showLandingTitle = true
                 showLandingActions = true
+            } else {
+                showLandingTitle = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
+                    showLandingActions = true
+                }
             }
         }
     }

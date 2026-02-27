@@ -7,15 +7,45 @@ import AppKit
 
 struct PartsAndPerformanceView: View {
     let instrument: Instrument
+    @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    #else
+    private let isPhone = false
+    #endif
 
     private var partsImageNames: [String] {
-        guard instrument.nameEnglish.lowercased() == "kora" else { return [] }
-        return ["kora-pp-config", "kora-pp-config-2"]
+        switch instrument.id {
+        case "guqin":
+            return ["guqin-pp-config", "guqin-pp-config-2"]
+        case "pipa":
+            return ["pipa-pp-config"]
+        case "koto":
+            return ["koto-pp-config"]
+        case "oud":
+            return ["oud-pp-config", "oud-pp-config-2"]
+        case "kora":
+            return ["kora-pp-config", "kora-pp-config-2"]
+        default:
+            return []
+        }
     }
 
     private var performanceImageNames: [String] {
-        guard instrument.nameEnglish.lowercased() == "kora" else { return [] }
-        return ["kora-pp-play"]
+        switch instrument.id {
+        case "guqin":
+            return ["guqin-pp-play-1", "guqin-pp-play-2", "guqin-pp-play-3"]
+        case "pipa":
+            return ["pipa-pp-play-1", "pipa-pp-play-2"]
+        case "koto":
+            return ["koto-pp-play-1", "koto-pp-play-2"]
+        case "oud":
+            return ["oud-pp-play-1", "oud-pp-play-2"]
+        case "kora":
+            return ["kora-pp-play"]
+        default:
+            return []
+        }
     }
 
     var body: some View {
@@ -31,7 +61,7 @@ struct PartsAndPerformanceView: View {
                         .font(.custom("Copperplate-Bold", size: 32))
                         .foregroundStyle(Color.black.opacity(0.84))
                         .multilineTextAlignment(.center)
-                        .padding(.top, 18)
+                        .padding(.top, isPhone ? 0 : 18)
                         .padding(.horizontal, 16)
 
                     imageCardLink(
@@ -58,18 +88,35 @@ struct PartsAndPerformanceView: View {
                         .font(.custom("Palatino-Italic", size: 18))
                         .foregroundStyle(Color.black.opacity(0.72))
                         .multilineTextAlignment(.center)
-                        .padding(.top, 6)
+                        .padding(.top, isPhone ? 0 : 6)
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .padding(.bottom, isPhone ? 0 : 24)
+            }
+            #if os(iOS)
+            .contentMargins(.vertical, isPhone ? 0 : nil, for: .scrollContent)
+            .contentMargins(.vertical, isPhone ? 0 : nil, for: .scrollIndicators)
+            #endif
+        }
+        .safeAreaPadding(.top, isPhone ? 0 : 8)
+        .safeAreaPadding(.bottom, isPhone ? 0 : 8)
+        .background(OldPaperBackground().ignoresSafeArea().accessibilityHidden(true))
+        .navigationTitle("Parts & Performance")
+        .overlay(alignment: .topLeading) {
+            if isPhone {
+                floatingBackButton
             }
         }
-        .safeAreaPadding(.top, 8)
-        .safeAreaPadding(.bottom, 8)
-        .background(OldPaperBackground().ignoresSafeArea())
-        .navigationTitle("Parts & Performance")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isPhone ? .hidden : .visible, for: .navigationBar)
+        .toolbarBackground(.white, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
+        #elseif os(macOS)
+        .toolbarBackground(.white, for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
+        .toolbarColorScheme(.light, for: .windowToolbar)
         #endif
     }
 
@@ -83,36 +130,62 @@ struct PartsAndPerformanceView: View {
         pageHeading: String,
         cardImageHeight: CGFloat
     ) -> some View {
-        if let coverImageName = imageNames.first {
-            NavigationLink {
-                ImageCategoryGalleryView(title: destinationTitle, pageHeading: pageHeading, imageNames: imageNames)
-            } label: {
+        Group {
+            if let coverImageName = imageNames.first {
+                NavigationLink {
+                    ImageCategoryGalleryView(title: destinationTitle, pageHeading: pageHeading, imageNames: imageNames)
+                } label: {
+                    ImageHolderCard(
+                        title: title,
+                        subtitle: subtitle,
+                        symbol: symbol,
+                        imageName: coverImageName,
+                        isInteractive: true,
+                        imageAreaHeight: cardImageHeight
+                    )
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("\(title) photos")
+                .accessibilityHint("Open the \(title.lowercased()) gallery.")
+            } else {
                 ImageHolderCard(
                     title: title,
-                    subtitle: subtitle,
+                    subtitle: "No photos added yet.",
                     symbol: symbol,
-                    imageName: coverImageName,
-                    isInteractive: true,
+                    imageName: nil,
+                    isInteractive: false,
                     imageAreaHeight: cardImageHeight
                 )
             }
-            .buttonStyle(.plain)
-            .contentShape(Rectangle())
-        } else {
-            ImageHolderCard(
-                title: title,
-                subtitle: "No photos added yet.",
-                symbol: symbol,
-                imageName: nil,
-                isInteractive: false,
-                imageAreaHeight: cardImageHeight
-            )
         }
+        .frame(maxWidth: 760)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private func adaptiveCardImageHeight(viewportWidth: CGFloat, viewportHeight: CGFloat) -> CGFloat {
         let base = max(viewportHeight * 0.28, viewportWidth * 0.22)
         return min(max(base, 220), 420)
+    }
+
+    @ViewBuilder
+    private var floatingBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.88))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.black.opacity(0.14), lineWidth: 0.8)
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 16)
+        .padding(.top, 8)
     }
 }
 
@@ -160,6 +233,7 @@ private struct ImageHolderCard: View {
                         Image(systemName: symbol)
                             .font(.system(size: 38, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.95))
+                            .accessibilityHidden(true)
 
                         Text("Image Holder")
                             .font(.custom("Palatino-Bold", size: 18))
@@ -200,6 +274,23 @@ private struct ImageHolderCard: View {
         )
         .shadow(color: Color.black.opacity(0.10), radius: 4, x: 0, y: 2)
         .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabelText)
+        .accessibilityValue(isInteractive ? "Available" : "Unavailable")
+        .accessibilityHint(isInteractive ? "Double tap to open photos." : "No photos added yet.")
+    }
+
+    private var accessibilityLabelText: String {
+        if let imageName, hasImage {
+            return "\(title), preview image \(friendlyImageName(imageName))"
+        }
+        return "\(title), image holder"
+    }
+
+    private func friendlyImageName(_ rawName: String) -> String {
+        rawName
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
     }
 }
 
@@ -207,6 +298,12 @@ private struct ImageCategoryGalleryView: View {
     let title: String
     let pageHeading: String
     let imageNames: [String]
+    @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    #else
+    private let isPhone = false
+    #endif
 
     var body: some View {
         ScrollView {
@@ -226,17 +323,56 @@ private struct ImageCategoryGalleryView: View {
                     .font(.custom("Palatino-Italic", size: 18))
                     .foregroundStyle(Color.black.opacity(0.72))
                     .multilineTextAlignment(.center)
-                    .padding(.top, 6)
+                    .padding(.top, isPhone ? 0 : 6)
             }
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.top, isPhone ? 0 : 12)
+            .padding(.bottom, isPhone ? 0 : 12)
         }
-        .safeAreaPadding(.top, 8)
-        .safeAreaPadding(.bottom, 8)
+        #if os(iOS)
+        .contentMargins(.vertical, isPhone ? 0 : nil, for: .scrollContent)
+        .contentMargins(.vertical, isPhone ? 0 : nil, for: .scrollIndicators)
+        #endif
+        .safeAreaPadding(.top, isPhone ? 0 : 8)
+        .safeAreaPadding(.bottom, isPhone ? 0 : 8)
         .background(OldPaperBackground().ignoresSafeArea())
         .navigationTitle(title)
+        .overlay(alignment: .topLeading) {
+            if isPhone {
+                floatingBackButton
+            }
+        }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isPhone ? .hidden : .visible, for: .navigationBar)
+        .toolbarBackground(.white, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
+        #elseif os(macOS)
+        .toolbarBackground(.white, for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
+        .toolbarColorScheme(.light, for: .windowToolbar)
         #endif
+    }
+
+    @ViewBuilder
+    private var floatingBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.88))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.black.opacity(0.14), lineWidth: 0.8)
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 16)
+        .padding(.top, 8)
     }
 }
 
@@ -278,8 +414,15 @@ private struct GalleryImageCard: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(Color.black.opacity(0.24), lineWidth: 1)
                 )
+                .accessibilityLabel(friendlyImageName(imageName))
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func friendlyImageName(_ rawName: String) -> String {
+        rawName
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
     }
 }
 
